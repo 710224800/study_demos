@@ -16,10 +16,7 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.TimeZone;
 
 public class TimeLineControlView extends View implements ScaleGestureDetector.OnScaleGestureListener {
     static final String TAG = "TimeLineControlView";
@@ -29,10 +26,12 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
     static final int MSG_LAST_LONG_PRESS = 3;
 
     static final int LONG_PRESS_MOVE = 30000;//长按时间移动时长
-    static final int TIME_LINE_MINITUES = 5;
+    static final int TIME_LINE_MINITUES = 1;
     static final long MINITUES = 60 * 1000;
     static final float MAX_SCALE = 10.0f;
     static final float MIN_SCALE = 0.5f;
+
+    static final int MAX = 30 * 60 * 1000;
 
     private int mLineLen = 7001;
     int mTopH;
@@ -76,7 +75,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
 
     boolean mMediaPlayer = false;
 
-    boolean mNeedNextButton = true;
+    boolean mNeedNextButton = false;
 
     boolean mIsPress = false;
 
@@ -86,14 +85,14 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
             switch (msg.what) {
                 case MSG_NOTIFY_UPDATE:
                     if (mTimeLineCallback != null) {
-                        mCurrentTime = System.currentTimeMillis() + mOffsetCurrentTime;
+                        mCurrentTime = 0 + mOffsetCurrentTime;
                         long selectTime = getSelectTime();
                         if (Math.abs(mCurrentTime - selectTime) < 15 * 1000) {
                             setLivePlay();
                             SDKLog.e(TAG, " selectTime near now ");
                         } else {
                             if (mTimeItems.isEmpty()) {
-                                updatePlayTime(System.currentTimeMillis());
+                                updatePlayTime(0);
                             } else {
                                 mTimeLineCallback.onSelectTime(getSelectTime());
                             }
@@ -383,7 +382,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
 
     // 同步当前时间 ms
     public void synCurrentTime(long time) {
-        mOffsetCurrentTime = time - System.currentTimeMillis();
+        mOffsetCurrentTime = time - 0;
         mCurrentTime = time;
         postInvalidate();
     }
@@ -452,6 +451,9 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         }
     }
 
+    int offset = 0;
+    long currentTimeMillion;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
 //        mGestureDetector.onTouchEvent(event);
@@ -482,15 +484,26 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
             mTouchStartX = (int) event.getX();
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
             mOffsetPos += (int) (event.getX() - mTouchStartX);
+            offset = (int) (event.getX() - mTouchStartX);
+            SDKLog.d(TAG + "asdf", "mOffsetPos=" + mOffsetPos);
             long selectTime = getSelectTime();
-            mCurrentTime = System.currentTimeMillis() + mOffsetCurrentTime;
-            if (selectTime > mCurrentTime) {
-                setJustPlayTime(System.currentTimeMillis());
-                SDKLog.e(TAG, "only update currentTime");
-            } else if (mCurrentTime - selectTime > 2000) {
-                SDKLog.e(TAG, "onUpdateTime" + selectTime);
-                if (mTimeLineCallback != null) {
-                    mTimeLineCallback.onUpdateTime(getSelectTime());
+            TimeDay timeDay = new TimeDay(selectTime);
+            SDKLog.d(TAG, timeDay.toString());
+            mCurrentTime = 0 + mOffsetCurrentTime;
+            SDKLog.d(TAG + "asdf", "offset=" + offset);
+            if (offset > 0 && selectTime <= currentTimeMillion){
+                SDKLog.d(TAG + "asdf", "offset > 0");
+                setJustPlayTime(currentTimeMillion);
+                return false;
+            } else {
+                if (selectTime >= MAX) {
+                    setJustPlayTime(MAX);
+                    SDKLog.e(TAG, "only update currentTime");
+                } else if (mCurrentTime - selectTime > 2000) {
+                    SDKLog.e(TAG, "onUpdateTime" + selectTime);
+                    if (mTimeLineCallback != null) {
+                        mTimeLineCallback.onUpdateTime(getSelectTime());
+                    }
                 }
             }
             mTouchStartX = (int) event.getX();
@@ -516,7 +529,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         int height = getHeight() - mBottomPadding;
         int top = 0;
         int left = 0;
-        mCurrentTime = System.currentTimeMillis() + mOffsetCurrentTime;
+        mCurrentTime = 0 + mOffsetCurrentTime;
 
         //背景
         mTimelineBg.setBounds(left, top, width, height);
@@ -525,7 +538,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         canvas.clipRect(new Rect(left + mLastDrawbleWidth, top, width - mLastDrawbleWidth, height + 1));
 
         ///时间轴
-        int lastPos = -52;
+        int lastPos = 0;
         long starttime = getTime(lastPos);
         TimeDay timeDay = new TimeDay(starttime);
         timeDay.minute = (timeDay.minute / TIME_LINE_MINITUES) * TIME_LINE_MINITUES;
@@ -533,7 +546,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         timeDay.updateTimeInMillis();
         starttime = timeDay.millis;
         lastPos = getPos(timeDay.millis) + left;
-        int hour = timeDay.hour + 1;
+        int hour = timeDay.hour;
         int minute = timeDay.minute;
         int timeTextSize = 30;
         int timeTextBaseSize = timeTextSize / 3;
@@ -541,28 +554,33 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         int timelineColor = 0xff808080;
 
         //录制时间
-        int lastDrawPos = -20;
+        int lastDrawPos = 0;
         long lastEndTime = 0;
         for (int i = 0; i < mTimeItems.size(); i++) {
             TimeItem timeItem = mTimeItems.get(i);
             int startPos = left + getPos(timeItem.startTime);
             long end = timeItem.startTime + timeItem.duration;
-            if (mCurrentTime <= end) {
-                end = mCurrentTime;
-            }
+//            if (mCurrentTime <= end) {
+//                end = mCurrentTime;
+//            }
             int endPos = getPos(end);
-            if (startPos > width || endPos < 0) {
-                continue;
+            if (endPos == startPos) {
+                endPos += 3;
             }
-            if (endPos < lastDrawPos) {
-                continue;
-            }
-            if (timeItem.startTime > lastEndTime && (timeItem.startTime - lastEndTime) < mLineLen) {
-                startPos = getPos(lastEndTime);
-            }
-            if (startPos < lastDrawPos) {
-                startPos = lastDrawPos;
-            }
+            SDKLog.d(TAG, "startPos=" + startPos);
+            SDKLog.d(TAG, "endPos=" + endPos);
+//            if (startPos > width || endPos < 0) {
+//                continue;
+//            }
+//            if (endPos < lastDrawPos) {
+//                continue;
+//            }
+//            if (timeItem.startTime > lastEndTime && (timeItem.startTime - lastEndTime) < mLineLen) {
+//                startPos = getPos(lastEndTime);
+//            }
+//            if (startPos < lastDrawPos) {
+//                startPos = lastDrawPos;
+//            }
             if (timeItem.isSaveFile == 1) {
                 mTimelineSaveSelBg.setBounds(startPos, top, endPos, height);
                 mTimelineSaveSelBg.draw(canvas);
@@ -587,27 +605,32 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         //时间刻度
         mPaint.setTextSize(timeTextSize);
         mPaint.setStrokeWidth(1);
-        while (lastPos < width + 50) {
-            if (minute == 60) {
-                mPaint.setColor(timelineColor);
-                canvas.drawLine(lastPos, top + mTopH * 3, lastPos, top + height - mTopH * 2, mPaint);
-                if (hour == 24) {
-                    hour = 0;
+        while (lastPos <= width) {
+//            if (minute == 60) {
+//                mPaint.setColor(timelineColor);
+//                canvas.drawLine(lastPos, top + mTopH * 3, lastPos, top + height - mTopH * 2, mPaint);
+//                if (hour == 24) {
+//                    hour = 0;
+//                    minute = 0;
+//                }
+//                if (hour == 0 || hour == 23) {
+//                    mPaint.setColor(0xff808080);
+//                    canvas.drawText(TimeUtils.getData(starttime), lastPos + 5, top + timeTextSize + 20, mPaint);// hour
+//                }
+//                mPaint.setColor(timeTextColor);
+//                canvas.drawText("" + hour + ":00", lastPos + 10, top + height - mTopH * 2 - timeTextBaseSize, mPaint);// hour
+//                hour++;
+//                minute = 0;
+//            } else
+            if (minute >= 0 && minute % 5 == 0 && starttime <= MAX) {
+                if (minute == 60) {
                     minute = 0;
+                    hour ++;
                 }
-                if (hour == 0 || hour == 23) {
-                    mPaint.setColor(0xff808080);
-                    canvas.drawText(TimeUtils.getData(starttime), lastPos + 5, top + timeTextSize + 20, mPaint);// hour
-                }
-                mPaint.setColor(timeTextColor);
-                canvas.drawText("" + hour + ":00", lastPos + 10, top + height - mTopH * 2 - timeTextBaseSize, mPaint);// hour
-                hour++;
-                minute = 0;
-            } else if (minute == 30) {
                 mPaint.setColor(timelineColor);
                 canvas.drawLine(lastPos, top + mTopH * 3, lastPos, top + height - mTopH * 2, mPaint);
                 mPaint.setColor(timeTextColor);
-                canvas.drawText("" + (hour - 1) + ":30", lastPos + 10, top + height - mTopH * 2 - timeTextBaseSize, mPaint);// hour
+                canvas.drawText("" + (hour > 9 ? hour : "0" + hour) + ":" + (minute > 9 ? minute : "0" + minute), lastPos + 10, top + height - mTopH * 2 - timeTextBaseSize, mPaint);// hour
             } else {
                 mPaint.setColor(timelineColor);
                 canvas.drawLine(lastPos, top + mTopH * 9, lastPos, top + height - mTopH * 10, mPaint);
@@ -643,22 +666,27 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
 
         public void updateTime(long milliseconds) {
             this.millis = milliseconds;
-            GregorianCalendar startCal = new GregorianCalendar(TimeUtils.getTimeZone());
-            startCal.setTimeInMillis(millis);
-            this.year = startCal.get(Calendar.YEAR);
-            this.month = (1 + startCal.get(Calendar.MONTH));
-            this.day = startCal.get(Calendar.DAY_OF_MONTH);
-            this.hour = startCal.get(Calendar.HOUR_OF_DAY);
-            this.minute = startCal.get(Calendar.MINUTE);
-            this.second = startCal.get(Calendar.SECOND);
+            long seconds = this.millis / 1000;
+            this.hour = (int) (seconds / 60 / 60);
+            this.minute = (int) ((seconds / 60) % 60);
+            this.second = (int) (seconds % 60);
+//            GregorianCalendar startCal = new GregorianCalendar(TimeUtils.getTimeZone());
+//            startCal.setTimeInMillis(millis);
+//            this.year = startCal.get(Calendar.YEAR);
+//            this.month = (1 + startCal.get(Calendar.MONTH));
+//            this.day = startCal.get(Calendar.DAY_OF_MONTH);
+//            this.hour = startCal.get(Calendar.HOUR_OF_DAY);
+//            this.minute = startCal.get(Calendar.MINUTE);
+//            this.second = startCal.get(Calendar.SECOND);
         }
 
         public void updateTimeInMillis() {
-            GregorianCalendar startCal = new GregorianCalendar(
-                    TimeZone.getDefault());
-            startCal.set(this.year, -1 + this.month, this.day, this.hour,
-                    this.minute, this.second);
-            millis = startCal.getTimeInMillis();
+            millis = (hour * 60 * 60 + minute * 60 + second) * 1000;
+//            GregorianCalendar startCal = new GregorianCalendar(
+//                    TimeZone.getDefault());
+//            startCal.set(this.year, -1 + this.month, this.day, this.hour,
+//                    this.minute, this.second);
+//            millis = startCal.getTimeInMillis();
         }
 
         @Override
