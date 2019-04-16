@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <dimen name="top_tools_item_width">44dp</dimen>
+    <dimen name="camera_bottom_height">96dp</dimen>
+    <dimen name="camera_bottom_item_margin">10dp</dimen>
+    <dimen name="time_line_with_date_height">84dp</dimen>
+    <dimen name="camera_bottom_item_width">48dp</dimen>
+    <dimen name="time_line_height">54dp</dimen>
+    <dimen name="time_line_topbar_h">2dp</dimen>
+    <dimen name="time_line_timebar_w">10dp</dimen>
+    <dimen name="time_line_time_5m_w">15dp</dimen>
+    <dimen name="time_line_last_w">30dp</dimen>
+    <dimen name="full_screen_top_bar_padding">5dp</dimen>
+    <dimen name="hour_of_day_hour_txt_size">12sp</dimen>
+    <dimen name="hour_of_day_hour_red_point_size">7dp</dimen>
+    <dimen name="hour_of_day_hour_red_point_margin">8dp</dimen>
+</resources>
