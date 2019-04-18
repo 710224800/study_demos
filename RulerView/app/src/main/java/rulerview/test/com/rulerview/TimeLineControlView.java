@@ -28,9 +28,10 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
 
     static final int LONG_PRESS_MOVE = 30000;//长按时间移动时长
     static final int TIME_LINE_MINITUES = 1;
-    static final long MINITUES = 60 * 1000;
-    static final float MAX_SCALE = 10.0f;
-    static final float MIN_SCALE = 0.5f;
+    static long MINITUES = 60 * 1000;
+    static final float MAX_SCALE = 5.0f;
+    static final float MIN_SCALE = 1f;
+    boolean isMinituesMode = true;
 
     static final int MAX = 30 * 60 * 1000;
 
@@ -89,7 +90,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
                     if (mTimeLineCallback != null) {
                         mCurrentTime = 0 + mOffsetCurrentTime;
                         long selectTime = getSelectTime();
-                        if (Math.abs(mCurrentTime - selectTime) < 15 * 1000) {
+                        if (Math.abs(mCurrentTime - selectTime) < 1000) {
                             setLivePlay();
                             SDKLog.e(TAG, " selectTime near now ");
                         } else {
@@ -153,9 +154,26 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         if (mWidthScaleFators < MIN_SCALE) {
             mWidthScaleFators = MIN_SCALE;
         }
+        if (mWidthScaleFators >= 3.0) {
+            MINITUES = 1000;
+            isMinituesMode = false;
+        } else {
+            MINITUES = 60 * 1000;
+            isMinituesMode = true;
+        }
         mWidthPer5Minutes = (int) (mWidthPer5MinutesBase * mWidthScaleFators);
+        mBeforeScaleTime = getSelectTime();
         mOffsetPos = (int) ((mCurrentTime - mBeforeScaleTime) * mWidthPer5Minutes
                 / (TIME_LINE_MINITUES * MINITUES));
+        if (mBeforeScaleTime > MAX) {
+            mBeforeScaleTime = MAX;
+        } else if (mBeforeScaleTime < 0) {
+            mBeforeScaleTime = 0;
+        }
+        setJustPlayTime(mBeforeScaleTime);
+        if (mTimeLineCallback != null) {
+            mTimeLineCallback.onUpdateTime(mBeforeScaleTime);
+        }
         invalidate();
     }
 
@@ -514,7 +532,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
                     if (mTimeLineCallback != null) {
                         mTimeLineCallback.onUpdateTime(MAX);
                     }
-                } else if (Math.abs(mCurrentTime - selectTime) > 2000) {
+                } else if (Math.abs(mCurrentTime - selectTime) >= 500) {
                     SDKLog.e(TAG, "onUpdateTime" + selectTime);
                     if (mTimeLineCallback != null) {
                         mTimeLineCallback.onUpdateTime(getSelectTime());
@@ -564,6 +582,10 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         lastPos = getPos(timeDay.millis) + left;
         int hour = timeDay.hour;
         int minute = timeDay.minute;
+        if (!isMinituesMode) {
+            hour = timeDay.minute;
+            minute = timeDay.second;
+        }
         int timeTextSize = 30;
         int timeTextBaseSize = timeTextSize / 3;
         int timeTextColor = 0xff808080;
