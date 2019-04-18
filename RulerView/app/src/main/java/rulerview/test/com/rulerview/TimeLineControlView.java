@@ -1,6 +1,7 @@
 
 package rulerview.test.com.rulerview;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
@@ -79,6 +80,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
 
     boolean mIsPress = false;
 
+    @SuppressLint("HandlerLeak")
     Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -94,7 +96,13 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
                             if (mTimeItems.isEmpty()) {
                                 updatePlayTime(0);
                             } else {
-                                mTimeLineCallback.onSelectTime(getSelectTime());
+                                long selectedTime = getSelectTime();
+                                if (selectedTime > MAX) {
+                                    selectedTime = MAX;
+                                } else if (selectedTime < 0) {
+                                    selectedTime = 0;
+                                }
+                                mTimeLineCallback.onSelectTime(selectedTime);
                             }
                         }
                         mIsPress = false;
@@ -210,7 +218,7 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
 
-        mTimelineBg = resources.getDrawable(R.mipmap.progress_bg_01);
+        mTimelineBg = resources.getDrawable(R.mipmap.progress_bg_03);
         mTimelineSelBg = resources.getDrawable(R.mipmap.progress_bg_02);
         mTimelMotionBg = resources.getDrawable(R.mipmap.progress_bg_04);
         mTimelineSaveSelBg = resources.getDrawable(R.mipmap.progress_bg_03);
@@ -432,11 +440,13 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
     }
 
     long getTime(int pos) {
+        SDKLog.d(TAG, "mCurrentTime=" + mCurrentTime + "   pos=" + pos + "   mHalfW=" + mHalfW + "   mOffsetPos=" + mOffsetPos + "   mWidthPer5Minutes=" + mWidthPer5Minutes);
         return (long) (mCurrentTime + (pos - mHalfW - mOffsetPos) * (TIME_LINE_MINITUES * MINITUES)
                 / mWidthPer5Minutes);
     }
 
     int getPos(long time) {
+//        SDKLog.d(TAG, "mCurrentTime=" + mCurrentTime + "   time=" + time + "   mHalfW=" + mHalfW + "   mOffsetPos=" + mOffsetPos + "   mWidthPer5Minutes=" + mWidthPer5Minutes);
         return (int) ((time - mCurrentTime) * mWidthPer5Minutes
                 / (TIME_LINE_MINITUES * MINITUES) + mHalfW + mOffsetPos);
     }
@@ -452,7 +462,6 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
     }
 
     int offset = 0;
-    long currentTimeMillion;
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -491,15 +500,21 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
             SDKLog.d(TAG, timeDay.toString());
             mCurrentTime = 0 + mOffsetCurrentTime;
             SDKLog.d(TAG + "asdf", "offset=" + offset);
-            if (offset > 0 && selectTime <= currentTimeMillion){
+            if (offset > 0 && selectTime <= 0){
                 SDKLog.d(TAG + "asdf", "offset > 0");
-                setJustPlayTime(currentTimeMillion);
+                setJustPlayTime(0);
+                if (mTimeLineCallback != null) {
+                    mTimeLineCallback.onUpdateTime(0);
+                }
                 return false;
             } else {
                 if (selectTime >= MAX) {
                     setJustPlayTime(MAX);
                     SDKLog.e(TAG, "only update currentTime");
-                } else if (mCurrentTime - selectTime > 2000) {
+                    if (mTimeLineCallback != null) {
+                        mTimeLineCallback.onUpdateTime(MAX);
+                    }
+                } else if (Math.abs(mCurrentTime - selectTime) > 2000) {
                     SDKLog.e(TAG, "onUpdateTime" + selectTime);
                     if (mTimeLineCallback != null) {
                         mTimeLineCallback.onUpdateTime(getSelectTime());
@@ -532,18 +547,19 @@ public class TimeLineControlView extends View implements ScaleGestureDetector.On
         mCurrentTime = 0 + mOffsetCurrentTime;
 
         //背景
-        mTimelineBg.setBounds(left, top, width, height);
+        mTimelineBg.setBounds(getPos(0), top, getPos(MAX), height);
         mTimelineBg.draw(canvas);
         canvas.save();
         canvas.clipRect(new Rect(left + mLastDrawbleWidth, top, width - mLastDrawbleWidth, height + 1));
 
         ///时间轴
-        int lastPos = 0;
+        int lastPos = -100;
         long starttime = getTime(lastPos);
         TimeDay timeDay = new TimeDay(starttime);
         timeDay.minute = (timeDay.minute / TIME_LINE_MINITUES) * TIME_LINE_MINITUES;
         timeDay.second = 0;
         timeDay.updateTimeInMillis();
+        SDKLog.d(TAG, timeDay.toString());
         starttime = timeDay.millis;
         lastPos = getPos(timeDay.millis) + left;
         int hour = timeDay.hour;
