@@ -7,8 +7,12 @@
         android:title="测试view"/>
 
     <item
-        android:id="@+id/menu_bezier_curve"
+        android:id="@+id/menu_bezier_curve2"
         android:icon="@mipmap/ic_launcher"
-        android:title="贝塞尔曲线"/>
+        android:title="贝塞尔曲线2阶"/>
+    <item
+        android:id="@+id/menu_bezier_curve3"
+        android:icon="@mipmap/ic_launcher"
+        android:title="贝塞尔曲线3阶"/>
 
 </menu>

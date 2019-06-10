@@ -7,6 +7,7 @@ import android.view.MenuItem;
 import android.widget.RelativeLayout;
 
 import myview.test.com.myview.widget.bezier.BezierView2;
+import myview.test.com.myview.widget.bezier.BezierView3;
 
 public class MainActivity extends AppCompatActivity {
     RelativeLayout rl_root;
@@ -33,8 +34,14 @@ public class MainActivity extends AppCompatActivity {
                 rl_root.addView(myView, layoutParams);
                 break;
             }
-            case R.id.menu_bezier_curve:{
+            case R.id.menu_bezier_curve2:{
                 BezierView2 bezierView = new BezierView2(this);
+                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+                rl_root.addView(bezierView, layoutParams);
+                break;
+            }
+            case R.id.menu_bezier_curve3:{
+                BezierView3 bezierView = new BezierView3(this);
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
                 rl_root.addView(bezierView, layoutParams);
                 break;
