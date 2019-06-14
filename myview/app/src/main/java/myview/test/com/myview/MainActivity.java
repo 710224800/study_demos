@@ -8,6 +8,7 @@ import android.widget.RelativeLayout;
 
 import myview.test.com.myview.widget.bezier.BezierView2;
 import myview.test.com.myview.widget.bezier.BezierView3;
+import myview.test.com.myview.widget.pathmeasure.CircleArrowTest;
 
 public class MainActivity extends AppCompatActivity {
     RelativeLayout rl_root;
@@ -44,6 +45,12 @@ public class MainActivity extends AppCompatActivity {
                 BezierView3 bezierView = new BezierView3(this);
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
                 rl_root.addView(bezierView, layoutParams);
+                break;
+            }
+            case R.id.menu_path_measure:{
+                CircleArrowTest circleArrowTest = new CircleArrowTest(this);
+                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+                rl_root.addView(circleArrowTest, layoutParams);
                 break;
             }
         }

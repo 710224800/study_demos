@@ -14,5 +14,9 @@
         android:id="@+id/menu_bezier_curve3"
         android:icon="@mipmap/ic_launcher"
         android:title="贝塞尔曲线3阶"/>
+    <item
+        android:id="@+id/menu_path_measure"
+        android:icon="@mipmap/ic_launcher"
+        android:title="path_measure"/>
 
 </menu>
