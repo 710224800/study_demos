@@ -87,4 +87,12 @@ public class Util {
             }
         }
     }
+
+    public boolean testGPTCR() {
+        boolean flag = true;
+        if (flag) {
+            return false;
+        }
+        return true;
+    }
 }
