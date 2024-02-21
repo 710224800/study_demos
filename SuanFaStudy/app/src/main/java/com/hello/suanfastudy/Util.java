@@ -1,5 +1,7 @@
 package com.hello.suanfastudy;
 
+import android.util.Log;
+
 import java.util.LinkedList;
 
 /**
@@ -90,6 +92,7 @@ public class Util {
 
     public boolean testGPTCR() {
         boolean flag = true;
+        Log.d("asdf", "testGPTCR");
         if (flag) {
             return false;
         }
